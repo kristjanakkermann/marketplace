@@ -1,0 +1,12 @@
+<div class="mx-auto md:w-2/3 w-full">
+  <h1 class="font-bold text-4xl">Editing Item</h1>
+
+  <div class="mt-6">
+    <%= render "form", item: @item %>
+  </div>
+
+  <div class="mt-4 flex justify-between">
+    <%= link_to "Show this item", @item, class: "text-sm text-blue-600 hover:underline" %>
+    <%= link_to "Back to items", items_path, class: "text-sm text-blue-600 hover:underline" %>
+  </div>
+</div> 

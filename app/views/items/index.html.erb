@@ -1,0 +1,127 @@
+<div class="container mx-auto">
+  <h1 class="text-3xl font-bold mb-6">
+    <% if params[:seller_id].present? && current_user && params[:seller_id].to_i == current_user.id %>
+      My Listed Items
+    <% else %>
+      Luxury Items
+    <% end %>
+  </h1>
+  
+  <!-- Filters -->
+  <div class="bg-white shadow-md rounded-lg p-4 mb-6">
+    <h2 class="text-xl font-semibold mb-4">Filters</h2>
+    
+    <%= form_with url: items_path, method: :get, data: { turbo_frame: "_top" }, class: "flex flex-wrap gap-4" do |form| %>
+      <% if params[:seller_id].present? %>
+        <%= form.hidden_field :seller_id, value: params[:seller_id] %>
+      <% end %>
+      
+      <div class="w-full md:w-auto">
+        <%= form.label :brand, "Brand", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.select :brand, 
+          options_for_select([["All Brands", ""]] + @brands.map { |b| [b, b] }, params[:brand]), 
+          {}, 
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" 
+        %>
+      </div>
+      
+      <div class="w-full md:w-auto">
+        <%= form.label :condition, "Condition", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.select :condition, 
+          options_for_select([["All Conditions", ""]] + @conditions.map { |c| [c, c] }, params[:condition]), 
+          {}, 
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" 
+        %>
+      </div>
+      
+      <div class="w-full md:w-auto">
+        <%= form.label :authentication_status, "Authentication", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.select :authentication_status, 
+          options_for_select([
+            ["All Items", ""], 
+            ["Verified", "verified"], 
+            ["Pending", "pending"]
+          ], params[:authentication_status]), 
+          {}, 
+          class: "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" 
+        %>
+      </div>
+      
+      <div class="w-full md:w-auto self-end">
+        <%= form.submit "Apply Filters", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        
+        <% if params[:brand].present? || params[:condition].present? || params[:authentication_status].present? %>
+          <%= link_to "Clear Filters", items_path(seller_id: params[:seller_id]), class: "ml-3 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+  
+  <!-- Items Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <% if @items.empty? %>
+      <div class="col-span-full text-center py-12">
+        <h3 class="text-lg font-medium text-gray-900">No items found</h3>
+        <p class="mt-1 text-sm text-gray-500">Try adjusting your filters to find more items</p>
+      </div>
+    <% else %>
+      <% @items.each do |item| %>
+        <div class="bg-white overflow-hidden shadow rounded-lg" data-turbo-frame="item_<%= item.id %>">
+          <div class="relative aspect-w-3 aspect-h-2 bg-gray-200">
+            <% if item.images.first %>
+              <%= image_tag item.images.first.image_url, class: "h-48 w-full object-cover" %>
+            <% else %>
+              <div class="flex items-center justify-center h-48 bg-gray-100">
+                <span class="text-gray-400">No image</span>
+              </div>
+            <% end %>
+            
+            <% if item.authentication_status == "verified" %>
+              <div class="absolute top-2 right-2 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Verified</div>
+            <% end %>
+            
+            <% unless item.available? %>
+              <div class="absolute inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+                <span class="text-white font-medium text-lg uppercase">Sold</span>
+              </div>
+            <% end %>
+          </div>
+          
+          <div class="p-4">
+            <h3 class="text-lg font-medium text-gray-900 truncate">
+              <%= link_to item.title, item, class: "hover:underline" %>
+            </h3>
+            <p class="mt-1 text-sm text-gray-500"><%= item.brand %></p>
+            <p class="mt-1 text-sm text-gray-500"><%= item.condition %></p>
+            
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-lg font-medium text-gray-900">
+                <%= number_to_currency(item.listed_price) %>
+              </span>
+              
+              <% if item.available? %>
+                <%= link_to "View Details", item, class: "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+  
+  <% if logged_in? %>
+    <div class="mt-6">
+      <%= link_to new_item_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" do %>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+        List New Item
+      <% end %>
+    </div>
+  <% else %>
+    <div class="mt-6 text-center">
+      <p class="text-gray-600">Want to sell your luxury items?</p>
+      <%= link_to "Sign Up", signup_path, class: "mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+    </div>
+  <% end %>
+</div> 
